@@ -1,0 +1,21 @@
+<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+  <!-- Sidebar Toggle (Topbar) -->
+  <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3"><i class="fa fa-bars"></i></button>
+
+  <h5 class="text-primary font-weight-bold">SmartEduc - Data Management</h5>
+
+  <ul class="navbar-nav ml-auto">
+    {% if user.is_authenticated %}
+      <li class="nav-item">
+        <span class="nav-link">Welcome, {{ user.username }}</span>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/admin/logout/">Logout</a>
+      </li>
+    {% else %}
+      <li class="nav-item">
+        <a class="nav-link" href="/admin/login/">Login</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}
+  Dashboard | SmartEduc
+{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-4 text-gray-800"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+
+  <div class="row">
+    <!-- Total Students -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Students</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Institutions -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Institutions</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_institutions }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-university fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Programs -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Programs</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_programs }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-layer-group fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Courses -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Courses</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_courses }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-book-open fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Enrollments -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-secondary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Enrollments</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_enrollments }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-user-plus fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Results -->
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Results</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_results }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
