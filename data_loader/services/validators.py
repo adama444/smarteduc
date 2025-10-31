@@ -1,142 +1,262 @@
 import pandas as pd
-from core.models import Student, Program, Course, Institution, AcademicYear
+from core.models import Institute, Program, Course, Student, Teacher
 
 
-def _read_file(file_path):
-    """Read file (CSV or Excel) using pandas"""
-    if file_path.endswith(".xlsx") or file_path.endswith(".xls"):
-        return pd.read_excel(file_path)
-    return pd.read_csv(file_path)
+# -------------
+# Helper utils
+# -------------
+def load_dataframe(file_path):
+    """Load CSV or Excel into a pandas DataFrame"""
+    if file_path.endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+    return df.fillna("")  # éviter les NaN
 
 
-# ------------- STUDENTS -------------
+def check_required_columns(df, required_cols):
+    """Retourne la liste des colonnes manquantes"""
+    return [col for col in required_cols if col not in df.columns]
+
+
+# -------------
+# Validators
+# -------------
+
+
 def validate_students_file(file_path):
     errors = []
-    try:
-        df = _read_file(file_path)
-        required_columns = [
-            "student_id",
-            "first_name",
-            "last_name",
-            "gender",
-            "birth_date",
-            "institution_code",
-        ]
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            errors.append(f"Missing columns: {', '.join(missing)}")
+    df = load_dataframe(file_path)
+    required = [
+        "student_id",
+        "first_name",
+        "last_name",
+        "gender (M/F)",
+        "birthdate (YYYY-MM-DD)",
+    ]
 
-        if df["student_id"].duplicated().any():
-            errors.append("Duplicate student_id values found.")
+    # Vérifier colonnes
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
 
-        if not df["gender"].isin(["M", "F"]).all():
-            errors.append("Invalid gender values (must be 'M' or 'F').")
-
-        for code in df["institution_code"].unique():
-            if not Institution.objects.filter(code=code).exists():
-                errors.append(f"Institution with code '{code}' not found.")
-
-    except Exception as e:
-        errors.append(str(e))
+    # Vérification des valeurs
+    for index, row in df.iterrows():
+        sid = str(row["student_id"]).strip()
+        if not sid:
+            errors.append(f"Row {index + 2}: Missing student_id")
+        gender = str(row["gender (M/F)"]).upper().strip()
+        if gender not in ["M", "F"]:
+            errors.append(f"Row {index + 2}: Invalid gender '{gender}' (expected M/F)")
     return errors
 
 
-# ------------- PROGRAMS -------------
-def validate_programs_file(file_path):
+def validate_teachers_file(file_path, user):
     errors = []
-    try:
-        df = _read_file(file_path)
-        required_columns = ["program_name", "institution_code"]
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            errors.append(f"Missing columns: {', '.join(missing)}")
+    df = load_dataframe(file_path)
+    required = ["first_name", "last_name", "grade", "status", "institute_acronym"]
 
-        for code in df["institution_code"].unique():
-            if not Institution.objects.filter(code=code).exists():
-                errors.append(f"Institution with code '{code}' not found.")
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
 
-        if df.duplicated(subset=["program_name", "institution_code"]).any():
-            errors.append("Duplicate programs per institution found.")
+    # Vérification existence des institutes
+    user_institution = user.institution
+    valid_acronyms = set(
+        Institute.objects.filter(institution=user_institution).values_list(
+            "acronym", flat=True
+        )
+    )
 
-    except Exception as e:
-        errors.append(str(e))
+    for index, row in df.iterrows():
+        acronym = str(row["institute_acronym"]).strip()
+        if acronym not in valid_acronyms:
+            errors.append(
+                f"Row {index + 2}: Institute '{acronym}' not found for your institution."
+            )
     return errors
 
 
-# ------------- COURSES -------------
+def validate_programs_file(file_path, user):
+    errors = []
+    df = load_dataframe(file_path)
+    required = ["program_id", "name", "domain", "level", "institute_acronym"]
+
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
+
+    user_institution = user.institution
+    valid_acronyms = set(
+        Institute.objects.filter(institution=user_institution).values_list(
+            "acronym", flat=True
+        )
+    )
+
+    for index, row in df.iterrows():
+        acronym = str(row["institute_acronym"]).strip()
+        if acronym not in valid_acronyms:
+            errors.append(
+                f"Row {index + 2}: Unknown institute acronym '{acronym}' for your institution."
+            )
+    return errors
+
+
 def validate_courses_file(file_path):
     errors = []
-    try:
-        df = _read_file(file_path)
-        required_columns = [
-            "course_code",
-            "course_name",
-            "program_name",
-            "institution_code",
-            "credits",
-        ]
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            errors.append(f"Missing columns: {', '.join(missing)}")
+    df = load_dataframe(file_path)
+    required = [
+        "course_id",
+        "code",
+        "name",
+        "credits",
+        "semester",
+        "program_id",
+        "teacher_id (optional)",
+    ]
 
-        for code in df["institution_code"].unique():
-            if not Institution.objects.filter(code=code).exists():
-                errors.append(f"Institution with code '{code}' not found.")
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
 
-    except Exception as e:
-        errors.append(str(e))
+    program_ids = set(Program.objects.values_list("program_id", flat=True))
+    teacher_ids = set(Teacher.objects.values_list("teacher_id", flat=True))
+
+    for index, row in df.iterrows():
+        if row["program_id"] not in program_ids:
+            errors.append(
+                f"Row {index + 2}: Program '{row['program_id']}' does not exist."
+            )
+        teacher = str(row["teacher_id (optional)"]).strip()
+        if teacher and teacher not in teacher_ids:
+            errors.append(f"Row {index + 2}: Teacher '{teacher}' not found.")
     return errors
 
 
-# ------------- ENROLLMENTS -------------
-def validate_enrollments_file(file_path):
+def validate_enrollments_file(file_path, user):
     errors = []
-    try:
-        df = _read_file(file_path)
-        required_columns = ["student_id", "program_name", "academic_year"]
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            errors.append(f"Missing columns: {', '.join(missing)}")
+    df = load_dataframe(file_path)
+    required = [
+        "enrollment_id",
+        "student_id",
+        "program_id",
+        "institute_acronym",
+        "academic_year",
+        "status",
+    ]
 
-        for sid in df["student_id"].unique():
-            if not Student.objects.filter(student_id=sid).exists():
-                errors.append(f"Student '{sid}' not found.")
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
 
-        for pname in df["program_name"].unique():
-            if not Program.objects.filter(name=pname).exists():
-                errors.append(f"Program '{pname}' not found.")
+    user_institution = user.institution
+    valid_acronyms = set(
+        Institute.objects.filter(institution=user_institution).values_list(
+            "acronym", flat=True
+        )
+    )
+    student_ids = set(Student.objects.values_list("student_id", flat=True))
+    program_ids = set(Program.objects.values_list("program_id", flat=True))
 
-        for ay in df["academic_year"].unique():
-            if not AcademicYear.objects.filter(name=ay).exists():
-                errors.append(f"Academic year '{ay}' not found.")
-
-    except Exception as e:
-        errors.append(str(e))
+    for index, row in df.iterrows():
+        acronym = str(row["institute_acronym"]).strip()
+        if acronym not in valid_acronyms:
+            errors.append(
+                f"Row {index + 2}: Institute '{acronym}' not valid for your institution."
+            )
+        if row["student_id"] not in student_ids:
+            errors.append(
+                f"Row {index + 2}: Student '{row['student_id']}' does not exist."
+            )
+        if row["program_id"] not in program_ids:
+            errors.append(f"Row {index + 2}: Program '{row['program_id']}' not found.")
     return errors
 
 
-# ------------- RESULTS -------------
-def validate_results_file(file_path):
+def validate_results_file(file_path, user):
     errors = []
-    try:
-        df = _read_file(file_path)
-        required_columns = ["student_id", "course_code", "academic_year", "grade"]
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            errors.append(f"Missing columns: {', '.join(missing)}")
+    df = load_dataframe(file_path)
+    required = [
+        "result_id",
+        "student_id",
+        "institute_acronym",
+        "course_id",
+        "academic_year",
+        "session",
+        "note",
+    ]
 
-        for sid in df["student_id"].unique():
-            if not Student.objects.filter(student_id=sid).exists():
-                errors.append(f"Student '{sid}' not found.")
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
 
-        for ccode in df["course_code"].unique():
-            if not Course.objects.filter(code=ccode).exists():
-                errors.append(f"Course '{ccode}' not found.")
+    user_institution = user.institution
+    valid_acronyms = set(
+        Institute.objects.filter(institution=user_institution).values_list(
+            "acronym", flat=True
+        )
+    )
+    student_ids = set(Student.objects.values_list("student_id", flat=True))
+    course_ids = set(Course.objects.values_list("course_id", flat=True))
 
-        for ay in df["academic_year"].unique():
-            if not AcademicYear.objects.filter(name=ay).exists():
-                errors.append(f"Academic year '{ay}' not found.")
+    for index, row in df.iterrows():
+        if row["student_id"] not in student_ids:
+            errors.append(f"Row {index + 2}: Unknown student '{row['student_id']}'")
+        acronym = str(row["institute_acronym"]).strip()
+        if acronym not in valid_acronyms:
+            errors.append(f"Row {index + 2}: Invalid institute acronym '{acronym}'")
+        if row["course_id"] not in course_ids:
+            errors.append(f"Row {index + 2}: Course '{row['course_id']}' not found.")
+        try:
+            note = float(row["note"])
+            if not (0 <= note <= 20):
+                errors.append(
+                    f"Row {index + 2}: Invalid note '{note}' (should be between 0 and 20)."
+                )
+        except Exception:
+            errors.append(
+                f"Row {index + 2}: Invalid note value '{row['note']}' (must be numeric)."
+            )
+    return errors
 
-    except Exception as e:
-        errors.append(str(e))
+
+def validate_degrees_file(file_path, user):
+    errors = []
+    df = load_dataframe(file_path)
+    required = [
+        "degree_id",
+        "student_id",
+        "institute_acronym",
+        "date_awarded (YYYY-MM-DD)",
+        "degree_type",
+        "name",
+    ]
+
+    missing = check_required_columns(df, required)
+    if missing:
+        errors.append(f"Missing required columns: {', '.join(missing)}")
+        return errors
+
+    user_institution = user.institution
+    valid_acronyms = set(
+        Institute.objects.filter(institution=user_institution).values_list(
+            "acronym", flat=True
+        )
+    )
+    student_ids = set(Student.objects.values_list("student_id", flat=True))
+
+    for index, row in df.iterrows():
+        acronym = str(row["institute_acronym"]).strip()
+        if acronym not in valid_acronyms:
+            errors.append(
+                f"Row {index + 2}: Institute '{acronym}' not recognized for your institution."
+            )
+        if row["student_id"] not in student_ids:
+            errors.append(f"Row {index + 2}: Student '{row['student_id']}' not found.")
     return errors

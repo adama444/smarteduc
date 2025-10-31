@@ -5,30 +5,47 @@
 {% block content %}
   <h1 class="h3 mb-4 text-gray-800"><i class="fas fa-file-upload"></i> Data Loader</h1>
 
+  <!-- Upload Form -->
   <div class="card shadow mb-4">
     <div class="card-body">
-      <form method="post" enctype="multipart/form-data">
+      <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
         <div class="form-group">
           <label for="file_type">File Type</label>
           <select class="form-control" name="file_type" id="file_type" required>
-            <option value="">-- Select Type --</option>
+            <option value="">-- Select File Type --</option>
             <option value="students">Students</option>
+            <option value="teachers">Teachers</option>
             <option value="programs">Programs</option>
             <option value="courses">Courses</option>
             <option value="enrollments">Enrollments</option>
             <option value="results">Results</option>
+            <option value="degrees">Degrees</option>
           </select>
         </div>
+
         <div class="form-group">
           <label for="file">Select File</label>
-          <input type="file" class="form-control-file" name="file" id="file" required />
+          <input type="file" class="form-control-file" name="file" id="file" accept=".csv, .xlsx" required />
         </div>
+
         <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
       </form>
     </div>
   </div>
 
+  <!-- 📘 Dynamic File Format Guide -->
+  <div id="dataFormatGuide" class="card shadow mb-4" style="display:none;">
+    <div class="card-header py-3 bg-info text-white">
+      <h6 class="m-0 font-weight-bold">📘 File Format Guide</h6>
+    </div>
+    <div class="card-body">
+      <p id="formatDescription" class="mb-1 text-dark font-weight-semibold"></p>
+      <ul id="formatColumns" class="text-gray-800 font-weight-bold"></ul>
+    </div>
+  </div>
+
+  <!-- 🧾 Recent Uploads -->
   <div class="card shadow">
     <div class="card-header py-3">
       <h6 class="m-0 font-weight-bold text-primary">Recent Uploads</h6>
@@ -70,4 +87,53 @@
       </div>
     </div>
   </div>
+
+  <!-- JS for Dynamic Guide -->
+  <script>
+    const formatGuide = {
+      students: {
+        desc: 'Each row represents a student. The student_id must be unique within the institution.',
+        cols: ['student_id', 'first_name', 'last_name', 'gender (M/F)', 'birthdate (YYYY-MM-DD)']
+      },
+      teachers: {
+        desc: 'Each row represents a teacher belonging to an institute. The institute is identified by its acronym.',
+        cols: ['teacher_id', 'first_name', 'last_name', 'grade', 'status', 'institute_acronym']
+      },
+      programs: {
+        desc: 'Each row defines a study program offered by an institute, identified by its acronym.',
+        cols: ['program_id', 'name', 'domain', 'level', 'institute_acronym']
+      },
+      courses: {
+        desc: 'Each row corresponds to a course belonging to a program.',
+        cols: ['course_id', 'code', 'name', 'credits', 'semester', 'program_id', 'teacher_id (optional)']
+      },
+      enrollments: {
+        desc: 'Each row links a student to a program for a given academic year. The institute is identified by its acronym.',
+        cols: ['enrollment_id', 'student_id', 'program_id', 'institute_acronym', 'academic_year', 'status']
+      },
+      results: {
+        desc: "Each row represents the grade obtained by a student in a course, with the student's institution identified by its acronym.",
+        cols: ['result_id', 'student_id', 'institute_acronym', 'course_id', 'academic_year', 'session', 'note']
+      },
+      degrees: {
+        desc: "Each row represents a degree obtained by a student, linked to the student's institute acronym.",
+        cols: ['degree_id', 'student_id', 'institute_acronym', 'date_awarded (YYYY-MM-DD)', 'degree_type', 'name']
+      }
+    }
+    
+    document.getElementById('file_type').addEventListener('change', function () {
+      const type = this.value
+      const guide = document.getElementById('dataFormatGuide')
+      const desc = document.getElementById('formatDescription')
+      const cols = document.getElementById('formatColumns')
+    
+      if (formatGuide[type]) {
+        guide.style.display = 'block'
+        desc.innerText = formatGuide[type].desc
+        cols.innerHTML = formatGuide[type].cols.map((c) => `<li>${c}</li>`).join('')
+      } else {
+        guide.style.display = 'none'
+      }
+    })
+  </script>
 {% endblock %}

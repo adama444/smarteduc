@@ -4,8 +4,9 @@ from django.db import models
 
 class User(AbstractUser):
     institution = models.ForeignKey(
-        "core.Institution", null=True, blank=True, on_delete=models.SET_NULL
+        "core.Institution", on_delete=models.SET_NULL, null=True, blank=True
     )
+    role = models.CharField(max_length=50, default="staff")
 
     def __str__(self):
         return (

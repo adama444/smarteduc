@@ -20,6 +20,9 @@
 
     <!-- Custom styles for this template -->
     <link href="{% static 'css/sb-admin-2.min.css' %}" rel="stylesheet" />
+
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
   </head>
 
   <body id="page-top">
@@ -64,5 +67,25 @@
 
     <!-- Core plugin JavaScript-->
     <script src="{% static 'vendor/jquery-easing/jquery.easing.min.js' %}"></script>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- 🧠 GLOBAL MESSAGE HANDLER -->
+    <script>
+      {% if messages %}
+        {% for message in messages %}
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: '{% if message.tags == "error" %}error{% elif message.tags == "success" %}success{% elif message.tags == "warning" %}warning{% else %}info{% endif %}',
+            html: '<pre style="text-align:left; white-space:pre-wrap; font-size:14px; font-weight: bold;">{{ message|escapejs }}</pre>',
+            showConfirmButton: false,
+            timer: 10000,
+            timerProgressBar: true,
+          });
+        {% endfor %}
+      {% endif %}
+    </script>
   </body>
 </html>

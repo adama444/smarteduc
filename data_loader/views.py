@@ -7,19 +7,23 @@ from .services import validators, ingestion
 
 # Mapping between file_type and corresponding functions
 VALIDATORS = {
-    "students": validators.validate_students_file,
+    "students": lambda f, u: validators.validate_students_file(f),
+    "teachers": validators.validate_teachers_file,
     "programs": validators.validate_programs_file,
-    "courses": validators.validate_courses_file,
+    "courses": lambda f, u: validators.validate_courses_file(f),
     "enrollments": validators.validate_enrollments_file,
     "results": validators.validate_results_file,
+    "degrees": validators.validate_degrees_file,
 }
 
 INGESTORS = {
-    "students": ingestion.ingest_students,
+    "students": lambda f, u: ingestion.ingest_students(f),
+    "teachers": ingestion.ingest_teachers,
     "programs": ingestion.ingest_programs,
-    "courses": ingestion.ingest_courses,
+    "courses": lambda f, u: ingestion.ingest_courses(f),
     "enrollments": ingestion.ingest_enrollments,
     "results": ingestion.ingest_results,
+    "degrees": ingestion.ingest_degrees,
 }
 
 
@@ -42,7 +46,7 @@ def upload_file(request):
         )
 
         # Validation
-        errors = VALIDATORS[file_type](import_file.file.path)
+        errors = VALIDATORS[file_type](import_file.file.path, request.user)
 
         if errors:
             import_file.status = "error"
@@ -51,27 +55,32 @@ def upload_file(request):
                 ImportLog.objects.create(
                     import_file=import_file, message=e, is_error=True
                 )
+
+            # Formatage des erreurs pour affichage
+            error_text = "\n".join([f"- {e}" for e in errors[:5]])
+            if len(errors) > 5:
+                error_text += f"\n...and {len(errors) - 5} more."
+
             messages.error(
-                request, f"File validation failed with {len(errors)} error(s)."
+                request,
+                f"File validation failed with {len(errors)} error(s):\n{error_text}",
             )
         else:
             try:
-                INGESTORS[file_type](import_file.file.path)
+                result_msg = INGESTORS[file_type](import_file.file.path, request.user)
                 import_file.status = "validated"
-                import_file.save()
                 ImportLog.objects.create(
                     import_file=import_file, message="File successfully ingested."
                 )
-                messages.success(
-                    request, f"{file_type.capitalize()} data successfully imported."
-                )
+                messages.success(request, result_msg)
             except Exception as e:
                 import_file.status = "error"
-                import_file.save()
                 ImportLog.objects.create(
                     import_file=import_file, message=str(e), is_error=True
                 )
                 messages.error(request, f"An error occurred during import: {str(e)}")
+            finally:
+                import_file.save()
 
         return redirect("data_loader:upload")
 
