@@ -2,8 +2,10 @@ asgiref==3.10.0
 Django==5.2.7
 dotenv==0.9.9
 et_xmlfile==2.0.0
+gunicorn==23.0.0
 numpy==2.3.4
 openpyxl==3.1.5
+packaging==25.0
 pandas==2.3.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
