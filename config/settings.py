@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.getenv("DEBUG"))
+DEBUG = str.lower(os.getenv("DEBUG"))
 
 ALLOWED_HOSTS = ['127.0.0.1', 'smarteduc.wainnovcorp.com']
 
@@ -82,7 +82,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 print(DEBUG)
-if DEBUG:
+if DEBUG == 'true':
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
